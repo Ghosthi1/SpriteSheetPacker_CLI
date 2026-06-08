@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::path::PathBuf;
+use image::DynamicImage;
 
 #[derive(Parser)]
 struct Cli {
@@ -20,7 +21,7 @@ fn main() {
     for input in &cli.inputs {
         all_pngs.extend(collect_pngs(input, &cli.exclude));
     }
-    println!("{:#?}", all_pngs);
+    load_image(all_pngs);
 }
 
 fn collect_pngs(path: &PathBuf, exclude: &Vec<PathBuf>) -> Vec<PathBuf> {
@@ -39,4 +40,19 @@ fn collect_pngs(path: &PathBuf, exclude: &Vec<PathBuf>) -> Vec<PathBuf> {
         return results;
     }
     vec![]
+}
+
+struct LoadedImage {
+    path: PathBuf,
+    image: DynamicImage,
+}
+fn load_image(images: Vec<PathBuf>) ->  Vec<LoadedImage> {
+    let mut result = vec![];
+    for path in images {
+        match image::open(&path) {
+            Ok(temp_image) => result.push(LoadedImage { path, image: temp_image }),
+            Err(e) => eprintln!("Failed to load {}: {}", path.display(), e),
+        }
+    }
+    result
 }
