@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Rust CLI tool (edition 2024) for packing sprite sheets. Currently in early development — only a stub `main.rs` exists.
+Rust CLI tool (edition 2024) for packing sprite sheets. Currently in active development.
 
 ## Teaching Mode
 
@@ -46,7 +46,7 @@ cargo fmt            # format
 Single binary crate (`src/main.rs`). Planned modules:
 - CLI argument definition (clap derive struct) ✅
 - Input collection — `collect_pngs(path, exclude)` recurses directories, filters `.png` ✅
-- Image loading — load each PNG, read dimensions
+- Image loading — `load_image(images)` opens each PNG, stores `LoadedImage { path, image }`, prints error and skips on failure ✅
 - Bin-packing algorithm (rectangle placement)
 - Image compositing (write sprites onto atlas canvas)
 - Output (save atlas PNG + JSON metadata)
