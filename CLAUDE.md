@@ -36,11 +36,17 @@ cargo fmt            # format
   sprite-packer -o atlas.png sprites/ hero.png enemy.png
   ```
 
+## Dependencies
+
+- `clap = { version = "4", features = ["derive"] }` — CLI argument parsing
+- `image = "0.25"` — PNG loading, pixel manipulation, saving
+
 ## Architecture
 
 Single binary crate (`src/main.rs`). Planned modules:
-- CLI argument definition (clap derive struct)
-- Input collection (walk dirs recursively, filter `.png`, merge with explicit files)
+- CLI argument definition (clap derive struct) ✅
+- Input collection — `collect_pngs(path, exclude)` recurses directories, filters `.png` ✅
+- Image loading — load each PNG, read dimensions
 - Bin-packing algorithm (rectangle placement)
 - Image compositing (write sprites onto atlas canvas)
 - Output (save atlas PNG + JSON metadata)
