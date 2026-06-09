@@ -46,8 +46,9 @@ fn main() {
     for input in &cli.inputs {
         all_pngs.extend(collect_pngs(input, &exclude));
     }
-    let loaded = load_image(all_pngs);
+    let mut loaded = load_image(all_pngs);
     if loaded.is_empty(){eprintln!("No PNG files found in the provided inputs.") ;return}
+    loaded.sort_by(|a, b| b.image.height().cmp(&a.image.height()));
 
     let auto_width = loaded.iter().map(|img| img.image.width()).max().unwrap_or(512);
     let width = cli.width.unwrap_or(auto_width);
@@ -128,5 +129,4 @@ fn composite (sprites: Vec<PackedImage>, max_width: u32 ) -> (image::RgbaImage, 
     }
     (canvas,metadata)
 }
-
 
