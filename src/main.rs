@@ -40,16 +40,19 @@ struct Sprite {
 fn main() {
     let cli = Cli::parse();
     let mut all_pngs = vec![];
+    let mut exclude = cli.exclude.clone();
+    exclude.push(cli.output.with_extension("png"));
 
     for input in &cli.inputs {
-        all_pngs.extend(collect_pngs(input, &cli.exclude));
+        all_pngs.extend(collect_pngs(input, &exclude));
     }
     let loaded = load_image(all_pngs);
+    if loaded.is_empty(){eprintln!("No PNG files found in the provided inputs.") ;return}
+
     let auto_width = loaded.iter().map(|img| img.image.width()).max().unwrap_or(512);
     let width = cli.width.unwrap_or(auto_width);
     let sprites = pack_sprites(loaded, width);
     let (canvas, metadata) = composite(sprites, width);
-
 
     let image_path = cli.output.with_extension("png");
     let json_path = cli.output.with_extension("json");
@@ -59,17 +62,14 @@ fn main() {
     canvas.save(&image_path).expect("Failed to save atlas");
     let json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize");
     std::fs::write(&json_path, json).expect("Failed to write JSON");
-    canvas.save(&image_path).expect("Failed to save atlas");
-    let json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize");
-    std::fs::write(&json_path, json).expect("Failed to write JSON");
 }
 
 fn collect_pngs(path: &PathBuf, exclude: &Vec<PathBuf>) -> Vec<PathBuf> {
-    if path.extension() == Some(std::ffi::OsStr::new("png")) {
-        return vec![path.clone()];
-    }
     if exclude.contains(&path) {
         return vec![];
+    }
+    if path.extension() == Some(std::ffi::OsStr::new("png")) {
+        return vec![path.clone()];
     }
     if path.is_dir() {
         let mut results = vec![];

@@ -33,13 +33,18 @@ cargo fmt            # format
 - **Argument parsing:** `clap` v4 with the derive feature
 - **CLI shape:**
   ```
-  sprite-packer -o atlas.png sprites/ hero.png enemy.png
+  sprite-packer -o output/atlas sprites/ hero.png enemy.png
   ```
+  Output base path derives both files: `output/atlas.png` + `output/atlas.json`
+- **Atlas width:** auto-calculated from widest sprite; override with `-w <px>`
+- **Self-exclusion:** output PNG is automatically excluded from input collection to prevent re-packing on repeated runs
 
 ## Dependencies
 
 - `clap = { version = "4", features = ["derive"] }` — CLI argument parsing
 - `image = "0.25"` — PNG loading, pixel manipulation, saving
+- `serde = { version = "1", features = ["derive"] }` — serialization
+- `serde_json = "1"` — JSON output
 
 ## Architecture
 
