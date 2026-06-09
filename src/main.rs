@@ -1,9 +1,8 @@
 //! CLI tool that takes png sprites and combines them into a spritesheet png with a JSON metadata file
 
-use std::collections::HashSet;
 use clap::Parser;
-use std::path::PathBuf;
-use image::{DynamicImage};
+use std::{collections::HashSet, path::PathBuf};
+use image::DynamicImage;
 use serde::Serialize;
 use rayon::prelude::*;
 
@@ -65,7 +64,7 @@ fn main() {
         eprintln!("No PNG files found in the provided inputs.") ;
         return
     }
-    // Sorts the tallest first gives the shelf algorithm the best chance to minimise wasted space
+    // Sorts the tallest first gives the shelf algorithm the best chance to minimize wasted space
     loaded.sort_by(|a, b| b.image.height().cmp(&a.image.height()));
 
     let auto_width = loaded.iter().map(|img| img.image.width()).max().unwrap_or(512);
@@ -80,7 +79,7 @@ fn main() {
 /// return all valid png's in a vec
 fn collect_pngs(path: &PathBuf, exclude: &HashSet<PathBuf>) -> Vec<PathBuf> {
     if exclude.contains(path) {
-        return vec![];
+        vec![]
     }
     else if path.extension() == Some(std::ffi::OsStr::new("png")) {
         return vec![path.clone()];
