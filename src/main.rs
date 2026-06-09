@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use clap::Parser;
 use std::path::PathBuf;
 use image::{DynamicImage};
@@ -40,11 +41,12 @@ struct Sprite {
 fn main() {
     let cli = Cli::parse();
     let mut all_pngs = vec![];
-    let mut exclude = cli.exclude.clone();
+    let mut exclude = cli.exclude;
     exclude.push(cli.output.with_extension("png"));
+    let exclude_set: HashSet<PathBuf> = exclude.into_iter().collect();
 
     for input in &cli.inputs {
-        all_pngs.extend(collect_pngs(input, &exclude));
+        all_pngs.extend(collect_pngs(input, &exclude_set));
     }
     let mut loaded = load_image(all_pngs);
     if loaded.is_empty(){eprintln!("No PNG files found in the provided inputs.") ;return}
@@ -65,8 +67,8 @@ fn main() {
     std::fs::write(&json_path, json).expect("Failed to write JSON");
 }
 
-fn collect_pngs(path: &PathBuf, exclude: &Vec<PathBuf>) -> Vec<PathBuf> {
-    if exclude.contains(&path) {
+fn collect_pngs(path: &PathBuf, exclude: &HashSet<PathBuf>) -> Vec<PathBuf> {
+    if exclude.contains(path) {
         return vec![];
     }
     if path.extension() == Some(std::ffi::OsStr::new("png")) {
