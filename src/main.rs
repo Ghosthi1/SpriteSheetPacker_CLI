@@ -3,6 +3,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use image::{DynamicImage};
 use serde::Serialize;
+use rayon::prelude::*;
 
 #[derive(Parser)]
 struct Cli {
@@ -86,14 +87,12 @@ fn collect_pngs(path: &PathBuf, exclude: &HashSet<PathBuf>) -> Vec<PathBuf> {
 }
 
 fn load_image(images: Vec<PathBuf>) ->  Vec<LoadedImage> {
-    let mut result = vec![];
-    for path in images {
+    images.into_par_iter().filter_map(|path| {
         match image::open(&path) {
-            Ok(temp_image) => result.push(LoadedImage { path, image: temp_image }),
-            Err(e) => eprintln!("Failed to load {}: {}", path.display(), e),
+            Ok(temp_image) => Some(LoadedImage { path, image: temp_image }),
+            Err(e) => {eprintln!("Failed to load {}: {}", path.display(), e); None}
         }
-    }
-    result
+    }).collect()
 }
 
 fn pack_sprites(images: Vec<LoadedImage>, max_width: u32) -> Vec<PackedImage>{
