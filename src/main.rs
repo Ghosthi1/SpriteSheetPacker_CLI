@@ -7,12 +7,12 @@ use rayon::prelude::*;
 
 #[derive(Parser)]
 struct Cli {
-    #[arg(short = 'o', long)]
+    #[arg(short = 'o',long)]
     output: PathBuf,
     inputs: Vec<PathBuf>,
-    #[arg(short = 'e', long)]
+    #[arg(short = 'e',long)]
     exclude: Vec<PathBuf>,
-    #[arg(short = 'w' ,long)]
+    #[arg(short = 'w',long)]
     width: Option<u32>,
 }
 
@@ -50,7 +50,10 @@ fn main() {
         all_pngs.extend(collect_pngs(input, &exclude_set));
     }
     let mut loaded = load_image(all_pngs);
-    if loaded.is_empty(){eprintln!("No PNG files found in the provided inputs.") ;return}
+    if loaded.is_empty(){
+        eprintln!("No PNG files found in the provided inputs.") ;
+        return
+    }
     loaded.sort_by(|a, b| b.image.height().cmp(&a.image.height()));
 
     let auto_width = loaded.iter().map(|img| img.image.width()).max().unwrap_or(512);
@@ -72,18 +75,18 @@ fn collect_pngs(path: &PathBuf, exclude: &HashSet<PathBuf>) -> Vec<PathBuf> {
     if exclude.contains(path) {
         return vec![];
     }
-    if path.extension() == Some(std::ffi::OsStr::new("png")) {
+    else if path.extension() == Some(std::ffi::OsStr::new("png")) {
         return vec![path.clone()];
     }
-    if path.is_dir() {
-        let mut results = vec![];
-        for entry in path.read_dir().unwrap() {
-            let entry_path = entry.unwrap().path();
-            results.extend(collect_pngs(&entry_path, exclude));
-        }
-        return results;
+    else if path.is_dir() {
+        path.read_dir().unwrap()
+            .flat_map(|entry| collect_pngs(&entry.unwrap().path(), exclude))
+            .collect()
     }
-    vec![]
+
+    else {
+        vec![]
+    }
 }
 
 fn load_image(images: Vec<PathBuf>) ->  Vec<LoadedImage> {
@@ -119,7 +122,7 @@ fn pack_sprites(images: Vec<LoadedImage>, max_width: u32) -> Vec<PackedImage>{
     result
 }
 
-fn composite (sprites: Vec<PackedImage>, max_width: u32 ) -> (image::RgbaImage, Vec<Sprite>) {
+fn composite (sprites: Vec<PackedImage>, max_width: u32) -> (image::RgbaImage, Vec<Sprite>) {
     let max_height = sprites.iter().map(|s| s.y + s.height).max().unwrap_or(0);
     let mut canvas = image::RgbaImage::new(max_width, max_height);
     let mut metadata = Vec::new();
