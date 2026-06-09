@@ -61,14 +61,7 @@ fn main() {
     let sprites = pack_sprites(loaded, width);
     let (canvas, metadata) = composite(sprites, width);
 
-    let image_path = cli.output.with_extension("png");
-    let json_path = cli.output.with_extension("json");
-    if let Some(parent) = image_path.parent() {
-        std::fs::create_dir_all(parent).expect("Failed to create output directory");
-    }
-    canvas.save(&image_path).expect("Failed to save atlas");
-    let json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize");
-    std::fs::write(&json_path, json).expect("Failed to write JSON");
+    save_output(&cli.output, &canvas, &metadata);
 }
 
 fn collect_pngs(path: &PathBuf, exclude: &HashSet<PathBuf>) -> Vec<PathBuf> {
@@ -132,5 +125,16 @@ fn composite (sprites: Vec<PackedImage>, max_width: u32) -> (image::RgbaImage, V
         metadata.push(Sprite { name: sprite.name, x: sprite.x, y: sprite.y, width: sprite.width, height: sprite.height });
     }
     (canvas,metadata)
+}
+
+fn save_output(output: &PathBuf, canvas: &image::RgbaImage, metadata: &Vec<Sprite>) {
+    let image_path = output.with_extension("png");
+    let json_path = output.with_extension("json");
+    if let Some(parent) = image_path.parent() {
+        std::fs::create_dir_all(parent).expect("Failed to create output directory");
+    }
+    canvas.save(&image_path).expect("Failed to save atlas");
+    let json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize");
+    std::fs::write(&json_path, json).expect("Failed to write JSON");
 }
 
