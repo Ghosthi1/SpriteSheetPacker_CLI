@@ -2,20 +2,17 @@ use std::char::MAX;
 use std::cmp::max;
 use clap::Parser;
 use std::path::PathBuf;
-use image::DynamicImage;
+use image::{DynamicImage, ImageBuffer, Rgba};
 
 #[derive(Parser)]
 struct Cli {
     #[arg(short = 'o', long)]
     output: PathBuf,
-
     inputs: Vec<PathBuf>,
-
     #[arg(short = 'e', long)]
     exclude: Vec<PathBuf>,
-
-    #[arg(short = 'w' ,long, default_value_t = 512)]
-    width: u32,
+    #[arg(short = 'w' ,long)]
+    width: Option<u32>,
 }
 
 struct LoadedImage {
@@ -29,6 +26,7 @@ struct Sprite {
     y: u32,
     width: u32,
     height: u32,
+    image: DynamicImage,
 }
 
 fn main() {
@@ -38,7 +36,12 @@ fn main() {
     for input in &cli.inputs {
         all_pngs.extend(collect_pngs(input, &cli.exclude));
     }
-    let sprites = pack_sprites(load_image(all_pngs), cli.width);
+    let loaded = load_image(all_pngs);
+    let auto_width = loaded.iter().map(|img| img.image.width()).max().unwrap_or(512);
+    let width = cli.width.unwrap_or(auto_width);
+    let sprites = pack_sprites(loaded, width);
+    let canvas = composite(sprites, width);
+    canvas.save(&cli.output).expect("Failed to save atlas");
 }
 
 fn collect_pngs(path: &PathBuf, exclude: &Vec<PathBuf>) -> Vec<PathBuf> {
@@ -87,9 +90,19 @@ fn pack_sprites(images: Vec<LoadedImage>, max_width: u32) -> Vec<Sprite> {
             row_height = 0;
         }
 
-        result.push(Sprite { name, x, y, width: img_width, height: img_height });
+        result.push(Sprite { name, x, y, width: img_width, height: img_height , image: image.image});
         x += img_width;
         row_height = row_height.max(img_height);
     }
     result
+}
+
+fn composite (sprites: Vec<Sprite>, max_width: u32 ) -> image::RgbaImage{
+    let max_height = sprites.iter().map(|s| s.y + s.height).max().unwrap_or(0);
+    let mut canvas = image::RgbaImage::new(max_width, max_height);
+
+    for sprite in sprites {
+        image::imageops::overlay(&mut canvas, &sprite.image, sprite.x as i64, sprite.y as i64);
+    }
+    canvas
 }
