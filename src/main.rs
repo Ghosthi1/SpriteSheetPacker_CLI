@@ -1,8 +1,7 @@
-use std::char::MAX;
-use std::cmp::max;
 use clap::Parser;
 use std::path::PathBuf;
-use image::{DynamicImage, ImageBuffer, Rgba};
+use image::{DynamicImage};
+use serde::Serialize;
 
 #[derive(Parser)]
 struct Cli {
@@ -20,13 +19,22 @@ struct LoadedImage {
     image: DynamicImage,
 }
 
-struct Sprite {
+struct PackedImage {
     name: String,
     x: u32,
     y: u32,
     width: u32,
     height: u32,
     image: DynamicImage,
+}
+
+#[derive(Serialize)]
+struct Sprite {
+    name: String,
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
 }
 
 fn main() {
@@ -40,8 +48,20 @@ fn main() {
     let auto_width = loaded.iter().map(|img| img.image.width()).max().unwrap_or(512);
     let width = cli.width.unwrap_or(auto_width);
     let sprites = pack_sprites(loaded, width);
-    let canvas = composite(sprites, width);
-    canvas.save(&cli.output).expect("Failed to save atlas");
+    let (canvas, metadata) = composite(sprites, width);
+
+
+    let image_path = cli.output.with_extension("png");
+    let json_path = cli.output.with_extension("json");
+    if let Some(parent) = image_path.parent() {
+        std::fs::create_dir_all(parent).expect("Failed to create output directory");
+    }
+    canvas.save(&image_path).expect("Failed to save atlas");
+    let json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize");
+    std::fs::write(&json_path, json).expect("Failed to write JSON");
+    canvas.save(&image_path).expect("Failed to save atlas");
+    let json = serde_json::to_string_pretty(&metadata).expect("Failed to serialize");
+    std::fs::write(&json_path, json).expect("Failed to write JSON");
 }
 
 fn collect_pngs(path: &PathBuf, exclude: &Vec<PathBuf>) -> Vec<PathBuf> {
@@ -73,7 +93,7 @@ fn load_image(images: Vec<PathBuf>) ->  Vec<LoadedImage> {
     result
 }
 
-fn pack_sprites(images: Vec<LoadedImage>, max_width: u32) -> Vec<Sprite> {
+fn pack_sprites(images: Vec<LoadedImage>, max_width: u32) -> Vec<PackedImage>{
     let mut x = 0u32;
     let mut y = 0u32;
     let mut row_height = 0u32;
@@ -90,19 +110,23 @@ fn pack_sprites(images: Vec<LoadedImage>, max_width: u32) -> Vec<Sprite> {
             row_height = 0;
         }
 
-        result.push(Sprite { name, x, y, width: img_width, height: img_height , image: image.image});
+        result.push(PackedImage { name, x, y, width: img_width, height: img_height , image: image.image});
         x += img_width;
         row_height = row_height.max(img_height);
     }
     result
 }
 
-fn composite (sprites: Vec<Sprite>, max_width: u32 ) -> image::RgbaImage{
+fn composite (sprites: Vec<PackedImage>, max_width: u32 ) -> (image::RgbaImage, Vec<Sprite>) {
     let max_height = sprites.iter().map(|s| s.y + s.height).max().unwrap_or(0);
     let mut canvas = image::RgbaImage::new(max_width, max_height);
+    let mut metadata = Vec::new();
 
     for sprite in sprites {
         image::imageops::overlay(&mut canvas, &sprite.image, sprite.x as i64, sprite.y as i64);
+        metadata.push(Sprite { name: sprite.name, x: sprite.x, y: sprite.y, width: sprite.width, height: sprite.height });
     }
-    canvas
+    (canvas,metadata)
 }
+
+
